@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>P✦LIO — Espace Créateur</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&family=Cinzel:wght@400;600&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --bg:    #0b0a08;
+      --surf:  #111009;
+      --surf2: #18160f;
+      --bdr:   #221f17;
+      --bdr2:  #2e2a1e;
+      --txt:   #ede8dc;
+      --txt2:  #a39880;
+      --txt3:  #534d3e;
+      --gold:  #c9a84c;
+      --goldd: #6e5a2a;
+      --red:   #c95050;
+      --ffd:   'Cormorant Garamond', Georgia, serif;
+      --ffb:   'Jost', sans-serif;
+      --ffm:   'Courier New', Courier, monospace;
+    }
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+    html, body { height:100%; overflow:hidden; background:var(--bg); color:var(--txt); font-family:var(--ffb); font-size:16px; }
+    ::selection { background:rgba(201,168,76,.2); }
+    ::-webkit-scrollbar { width:3px; }
+    ::-webkit-scrollbar-thumb { background:var(--bdr2); border-radius:99px; }
+
+    .screen { position:fixed; inset:0; display:flex; flex-direction:column; opacity:0; pointer-events:none; transition:opacity .5s ease; }
+    .screen.on { opacity:1; pointer-events:all; }
+
+    /* ── AUTH ── */
+    #s-auth {
+      justify-content:center; align-items:center;
+      background:radial-gradient(ellipse 80% 55% at 50% 110%,rgba(201,168,76,.07) 0%,transparent 70%),var(--bg);
+    }
+    #s-auth::after {
+      content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='.04'/%3E%3C/svg%3E");
+      opacity:.45;
+    }
+    .aw { position:relative;z-index:1;width:100%;max-width:390px;padding:1.5rem 2rem;animation:fadeUp .65s ease both; }
+    .a-logo { font-family:'Cinzel',serif;font-size:2rem;font-weight:600;letter-spacing:.5em;color:var(--txt);text-align:center;margin-bottom:.25rem; }
+    .a-logo .g { color:var(--gold); }
+    .a-sub { text-align:center;font-size:.6rem;font-weight:500;letter-spacing:.3em;text-transform:uppercase;color:var(--txt3);margin-bottom:2.5rem; }
+
+    .card-v {
+      width:100%;aspect-ratio:1.586;
+      background:linear-gradient(145deg,#1c180e,#261f12 55%,#1c180e);
+      border:1px solid var(--bdr2);border-radius:14px;margin-bottom:2rem;
+      position:relative;overflow:hidden;padding:1.4rem 1.5rem;
+      display:flex;flex-direction:column;justify-content:flex-end;gap:.55rem;
+      box-shadow:0 30px 60px rgba(0,0,0,.55),inset 0 1px 0 rgba(201,168,76,.08);
+    }
+    .card-v::before { content:'P✦LIO';position:absolute;top:1.2rem;left:1.5rem;font-family:'Cinzel',serif;font-size:.9rem;font-weight:600;letter-spacing:.35em;color:var(--gold);opacity:.8; }
+    .card-v::after { content:'';position:absolute;top:-40%;right:-25%;width:65%;aspect-ratio:1;background:radial-gradient(circle,rgba(201,168,76,.1),transparent 65%);border-radius:50%; }
+    .card-bg { position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Cinzel',serif;font-size:6rem;font-weight:600;color:rgba(255,255,255,.02);letter-spacing:.3em;pointer-events:none; }
+    .chip { width:34px;height:26px;background:linear-gradient(140deg,#7a6530,#c9a84c,#7a6530);border-radius:4px; }
+    .card-nd { font-family:var(--ffm);font-size:.82rem;letter-spacing:.12em;color:var(--txt2); }
+    .card-role { position:absolute;bottom:1.4rem;right:1.5rem;font-size:.55rem;font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:var(--txt3); }
+
+    .af { width:100%;background:var(--surf2);border:1px solid var(--bdr);color:var(--txt);font-family:var(--ffm);font-size:.9rem;letter-spacing:.1em;padding:.8rem 1.2rem;outline:none;transition:border-color .3s;text-align:center; }
+    .af::placeholder { color:var(--txt3);font-style:italic;font-family:var(--ffb);letter-spacing:.02em; }
+    .af:focus { border-color:var(--goldd); }
+    .af.err { border-color:var(--red)!important;animation:shake .35s ease; }
+    .abtn { width:100%;margin-top:.65rem;padding:.8rem;background:transparent;border:1px solid var(--goldd);color:var(--gold);font-family:'Cinzel',serif;font-size:.78rem;font-weight:600;letter-spacing:.25em;text-transform:uppercase;cursor:pointer;transition:all .3s; }
+    .abtn:hover { background:rgba(201,168,76,.08);border-color:var(--gold); }
+    .abtn:disabled { opacity:.5;cursor:not-allowed; }
+    .spinner { display:inline-block;width:13px;height:13px;border:2px solid var(--goldd);border-top-color:var(--gold);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:.5rem; }
+    .aerr { text-align:center;font-size:.7rem;color:var(--red);letter-spacing:.04em;min-height:1.2em;margin-top:.55rem; }
+    .anote { text-align:center;margin-top:1.75rem;font-size:.74rem;color:var(--txt3);line-height:1.6; }
+
+    /* ── EDITOR ── */
+    #s-ed { overflow:hidden; }
+    .topbar { height:50px;background:var(--surf);border-bottom:1px solid var(--bdr);display:flex;align-items:center;padding:0 1.2rem;gap:1rem;flex-shrink:0; }
+    .tb-logo { font-family:'Cinzel',serif;font-size:.9rem;font-weight:600;letter-spacing:.4em;color:var(--txt);flex-shrink:0; }
+    .tb-logo .g { color:var(--gold); }
+    .tb-badge { font-size:.58rem;font-weight:500;letter-spacing:.15em;text-transform:uppercase;color:var(--txt3);background:var(--surf2);border:1px solid var(--bdr);padding:.15rem .5rem; }
+    .tb-user { font-family:var(--ffm);font-size:.68rem;letter-spacing:.07em;color:var(--gold);margin-left:auto; }
+    .tb-fin { background:transparent;border:1px solid var(--goldd);color:var(--gold);font-family:'Cinzel',serif;font-size:.65rem;font-weight:600;letter-spacing:.2em;text-transform:uppercase;padding:.38rem .9rem;cursor:pointer;transition:all .25s;flex-shrink:0; }
+    .tb-fin:hover { background:rgba(201,168,76,.09);border-color:var(--gold); }
+    .ed-body { flex:1;display:flex;overflow:hidden; }
+
+    .sidebar { width:210px;background:var(--surf);border-right:1px solid var(--bdr);display:flex;flex-direction:column;flex-shrink:0;overflow:hidden; }
+    .sb-top { padding:.9rem 1rem;border-bottom:1px solid var(--bdr);flex-shrink:0; }
+    .sblbl { font-size:.56rem;font-weight:500;letter-spacing:.22em;text-transform:uppercase;color:var(--txt3);margin-bottom:.6rem; }
+    .sbt { width:100%;background:transparent;border:none;border-bottom:1px solid var(--bdr2);color:var(--txt);font-family:var(--ffd);font-size:.95rem;font-style:italic;padding:.2rem 0;outline:none;margin-bottom:.45rem; }
+    .sbt::placeholder { color:var(--txt3); }
+    .sba { width:100%;background:transparent;border:none;color:var(--txt2);font-family:var(--ffm);font-size:.65rem;letter-spacing:.05em;padding:.2rem 0;outline:none; }
+    .sb-ch-h { padding:.7rem 1rem .4rem;font-size:.56rem;font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:var(--txt3);flex-shrink:0; }
+    .chl { flex:1;overflow-y:auto;padding:.2rem .5rem; }
+    .chi { display:flex;align-items:center;gap:.4rem;padding:.4rem .55rem;cursor:pointer;transition:background .18s;border-left:2px solid transparent; }
+    .chi:hover { background:var(--surf2); }
+    .chi.active { background:rgba(201,168,76,.06);border-left-color:var(--gold); }
+    .chi.active .cnm { color:var(--txt); }
+    .cn { font-family:var(--ffm);font-size:.58rem;color:var(--txt3);flex-shrink:0; }
+    .cnm { flex:1;font-size:.78rem;color:var(--txt2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+    .cdel { background:none;border:none;cursor:pointer;color:var(--txt3);font-size:.72rem;opacity:0;transition:opacity .18s,color .18s;padding:0 2px; }
+    .chi:hover .cdel { opacity:1; }
+    .cdel:hover { color:var(--red)!important; }
+    .addch { margin:.4rem .6rem .8rem;background:transparent;border:1px dashed var(--bdr2);color:var(--txt3);font-size:.65rem;font-weight:500;letter-spacing:.1em;padding:.45rem;cursor:pointer;text-align:center;transition:all .2s;flex-shrink:0; }
+    .addch:hover { border-color:var(--goldd);color:var(--gold); }
+
+    .ed-main { flex:1;display:flex;flex-direction:column;overflow:hidden; }
+    .toolbar { height:40px;background:var(--surf);border-bottom:1px solid var(--bdr);display:flex;align-items:center;padding:0 .75rem;gap:.15rem;flex-shrink:0; }
+    .cti { flex:1;background:transparent;border:none;color:var(--txt);font-family:var(--ffd);font-size:.9rem;font-style:italic;padding:0 .4rem;outline:none; }
+    .cti::placeholder { color:var(--txt3); }
+    .tsep { width:1px;height:18px;background:var(--bdr);margin:0 .2rem;flex-shrink:0; }
+    .tbtn { background:none;border:none;color:var(--txt2);cursor:pointer;padding:.25rem .45rem;font-size:.8rem;font-family:var(--ffb);transition:all .18s;min-width:26px;text-align:center;flex-shrink:0; }
+    .tbtn:hover { background:var(--surf2);color:var(--txt); }
+    .write { flex:1;padding:2.5rem 4.5rem;overflow-y:auto;outline:none;font-family:var(--ffd);font-size:1.1rem;line-height:1.9;color:var(--txt);caret-color:var(--gold); }
+    .write:empty::before { content:attr(data-ph);color:var(--txt3);font-style:italic;pointer-events:none; }
+    .write h1 { font-family:var(--ffd);font-size:2rem;font-weight:300;margin-bottom:1rem; }
+    .write h2 { font-family:var(--ffd);font-size:1.45rem;font-weight:300;margin:1.5rem 0 .6rem; }
+    .write p { margin-bottom:.65rem; }
+    .write blockquote { border-left:2px solid var(--goldd);padding-left:1.5rem;margin:1rem 0;font-style:italic;color:var(--txt2); }
+
+    .stats { width:170px;background:var(--surf);border-left:1px solid var(--bdr);padding:1.1rem .9rem;display:flex;flex-direction:column;gap:1.1rem;flex-shrink:0;overflow-y:auto; }
+    .stb { display:flex;flex-direction:column;gap:.18rem; }
+    .stl { font-size:.56rem;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3); }
+    .stv { font-family:var(--ffm);font-size:1.4rem;color:var(--txt);line-height:1; }
+    .stu { font-size:.6rem;color:var(--txt2);font-weight:300; }
+    .stg { color:var(--gold); }
+    .sthr { height:1px;background:var(--bdr); }
+    .finbtn { margin-top:auto;background:transparent;border:1px solid var(--goldd);color:var(--gold);font-family:'Cinzel',serif;font-size:.65rem;font-weight:600;letter-spacing:.18em;text-transform:uppercase;padding:.7rem .4rem;cursor:pointer;transition:all .3s;text-align:center;width:100%; }
+    .finbtn:hover { background:rgba(201,168,76,.09);border-color:var(--gold); }
+
+    /* ── SUMMARY ── */
+    #s-sum { justify-content:center;align-items:center;overflow-y:auto; }
+    .sumw { width:100%;max-width:660px;padding:2.5rem;overflow-y:auto;max-height:100vh; }
+    .sum-top { text-align:center;margin-bottom:2.5rem; }
+    .sum-logo { font-family:'Cinzel',serif;font-size:1.5rem;font-weight:600;letter-spacing:.5em;color:var(--txt); }
+    .sum-logo .g { color:var(--gold); }
+    .sum-eye { font-size:.58rem;font-weight:500;letter-spacing:.28em;text-transform:uppercase;color:var(--txt3);margin-top:.3rem; }
+    .sum-ttl { font-family:var(--ffd);font-size:2.4rem;font-weight:300;font-style:italic;color:var(--txt);line-height:1.2;margin:2rem 0 .4rem; }
+    .sum-aut { font-family:var(--ffm);font-size:.7rem;letter-spacing:.1em;color:var(--txt2);margin-bottom:1.8rem; }
+    .sum-grid { display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--bdr);border:1px solid var(--bdr);overflow:hidden;margin-bottom:1.5rem; }
+    .sc { background:var(--surf);padding:1.1rem 1.3rem; }
+    .scl { font-size:.56rem;font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:var(--txt3);margin-bottom:.25rem; }
+    .scv { font-family:var(--ffm);font-size:1.4rem;color:var(--txt);line-height:1; }
+    .scn { font-size:.7rem;color:var(--txt2);font-style:italic;margin-top:.15rem; }
+    .pv { color:var(--gold);font-size:1.6rem; }
+    .sum-chs { background:var(--surf);border:1px solid var(--bdr);padding:1.1rem 1.3rem;margin-bottom:1.8rem; }
+    .scht { font-size:.56rem;font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:var(--txt3);margin-bottom:.9rem; }
+    .schr { display:flex;align-items:baseline;gap:.7rem;padding:.35rem 0;border-bottom:1px solid var(--bdr);font-size:.88rem;font-family:var(--ffd); }
+    .schr:last-child { border-bottom:none; }
+    .sn { font-family:var(--ffm);font-size:.6rem;color:var(--txt3);flex-shrink:0; }
+    .snm { flex:1;font-style:italic;color:var(--txt); }
+    .sw { font-family:var(--ffm);font-size:.6rem;color:var(--txt2); }
+    .sum-acts { display:flex;gap:.8rem; }
+    .btn-bk { flex:1;background:transparent;border:1px solid var(--bdr2);color:var(--txt2);font-family:'Cinzel',serif;font-size:.7rem;font-weight:600;letter-spacing:.15em;text-transform:uppercase;padding:.8rem;cursor:pointer;transition:all .2s; }
+    .btn-bk:hover { border-color:var(--txt2);color:var(--txt); }
+    .btn-sd { flex:2;background:transparent;border:1px solid var(--goldd);color:var(--gold);font-family:'Cinzel',serif;font-size:.7rem;font-weight:600;letter-spacing:.15em;text-transform:uppercase;padding:.8rem;cursor:pointer;transition:all .3s; }
+    .btn-sd:hover { background:rgba(201,168,76,.08);border-color:var(--gold); }
+    .btn-sd:disabled { opacity:.45;cursor:not-allowed; }
+
+    /* ── MODAL ── */
+    .modal-bg { position:fixed;inset:0;background:rgba(11,10,8,.9);display:flex;justify-content:center;align-items:center;z-index:200;opacity:0;pointer-events:none;transition:opacity .4s;backdrop-filter:blur(5px); }
+    .modal-bg.open { opacity:1;pointer-events:all; }
+    .modal-box { background:var(--surf2);border:1px solid var(--bdr2);padding:2.5rem 2.2rem;max-width:380px;width:90%;text-align:center;transform:translateY(16px);transition:transform .4s;box-shadow:0 40px 80px rgba(0,0,0,.65); }
+    .modal-bg.open .modal-box { transform:translateY(0); }
+    .mic { font-family:'Cinzel',serif;font-size:1.6rem;color:var(--gold);margin-bottom:.9rem; }
+    .mttl { font-family:var(--ffd);font-size:1.35rem;font-weight:300;font-style:italic;margin-bottom:.65rem; }
+    .mtxt { font-size:.82rem;color:var(--txt2);line-height:1.65;margin-bottom:1.8rem; }
+    .mcl { background:transparent;border:1px solid var(--bdr2);color:var(--txt2);font-size:.65rem;font-weight:500;letter-spacing:.15em;padding:.55rem 1.4rem;cursor:pointer;transition:all .2s; }
+    .mcl:hover { border-color:var(--txt2);color:var(--txt); }
+
+    /* ── CHAPTER MODAL ── */
+    #ch-modal .modal-box { max-width:420px;text-align:left; }
+    #ch-modal .modal-box .mttl { text-align:center; }
+    .ch-modal-form { display:flex;flex-direction:column;gap:.75rem;margin-bottom:1.5rem; }
+    .ch-modal-input {
+      width:100%;background:var(--surf);border:1px solid var(--bdr2);color:var(--txt);
+      font-family:var(--ffm);font-size:.88rem;letter-spacing:.06em;
+      padding:.7rem 1rem;outline:none;transition:border-color .25s;
+    }
+    .ch-modal-input:focus { border-color:var(--goldd); }
+    .ch-modal-input::placeholder { color:var(--txt3);font-style:italic;font-family:var(--ffb);letter-spacing:.02em; }
+    .ch-modal-tags { display:flex;flex-wrap:wrap;gap:.4rem; }
+    .ch-tag {
+      background:var(--surf);border:1px solid var(--bdr2);color:var(--txt2);
+      font-size:.62rem;font-weight:500;letter-spacing:.1em;padding:.28rem .65rem;
+      cursor:pointer;transition:all .18s;
+    }
+    .ch-tag:hover { border-color:var(--goldd);color:var(--gold); }
+    .ch-modal-actions { display:flex;gap:.6rem; }
+    .ch-modal-cancel { flex:1;background:transparent;border:1px solid var(--bdr2);color:var(--txt3);font-family:var(--ffb);font-size:.68rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase;padding:.65rem;cursor:pointer;transition:all .2s; }
+    .ch-modal-cancel:hover { color:var(--txt2);border-color:var(--txt3); }
+    .ch-modal-ok { flex:2;background:transparent;border:1px solid var(--goldd);color:var(--gold);font-family:'Cinzel',serif;font-size:.68rem;font-weight:600;letter-spacing:.18em;text-transform:uppercase;padding:.65rem;cursor:pointer;transition:all .25s; }
+    .ch-modal-ok:hover { background:rgba(201,168,76,.08);border-color:var(--gold); }
+
+    /* ── EDITABLE PRICE ── */
+    .price-wrap { display:flex;flex-direction:column;gap:.35rem; }
+    .price-input-row { display:flex;align-items:center;gap:.4rem; }
+    .price-in {
+      width:100%;background:transparent;border:none;border-bottom:1px solid var(--bdr2);
+      color:var(--gold);font-family:var(--ffm);font-size:1.6rem;line-height:1;
+      outline:none;padding:.1rem 0;transition:border-color .25s;
+    }
+    .price-in:focus { border-color:var(--gold); }
+    .price-reset {
+      background:none;border:none;cursor:pointer;color:var(--txt3);font-size:.7rem;
+      flex-shrink:0;transition:color .2s;padding:0 2px;margin-top:2px;
+    }
+    .price-reset:hover { color:var(--gold); }
+    .price-auto-note { font-size:.62rem;color:var(--txt3);font-style:italic; }
+
+    /* ── SAVE INDICATOR ── */
+    .save-wrap { display:flex;align-items:center;gap:.4rem; }
+    .save-dot { width:6px;height:6px;border-radius:50%;flex-shrink:0;transition:background .4s; }
+    .save-dot.saved { background:#5a9c6e; }
+    .save-dot.dirty { background:var(--gold);animation:pulse 1.5s ease infinite; }
+    .save-dot.saving { background:var(--gold);opacity:.6; }
+    .save-lbl { font-family:var(--ffm);font-size:.58rem;color:var(--txt3);letter-spacing:.04em;white-space:nowrap; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
+
+    /* ── RESTORE MODAL ── */
+    .restore-info { background:var(--surf);border:1px solid var(--bdr2);padding:.9rem 1rem;margin-bottom:1.2rem;display:flex;flex-direction:column;gap:.5rem; }
+    .r-row { display:flex;align-items:baseline;justify-content:space-between;gap:.5rem; }
+    .r-key { font-size:.6rem;font-weight:500;letter-spacing:.15em;text-transform:uppercase;color:var(--txt3);flex-shrink:0; }
+    .r-val { font-family:var(--ffm);font-size:.72rem;color:var(--txt);text-align:right; }
+    .restore-src { font-size:.62rem;color:var(--gold);font-style:italic;margin-top:.15rem;text-align:center; }
+    .restore-acts { display:flex;gap:.6rem;margin-top:.2rem; }
+    .restore-new { flex:1;background:transparent;border:1px solid var(--bdr2);color:var(--txt3);font-family:var(--ffb);font-size:.65rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase;padding:.65rem;cursor:pointer;transition:all .2s; }
+    .restore-new:hover { color:var(--txt2);border-color:var(--txt3); }
+    .restore-ok { flex:2;background:transparent;border:1px solid var(--goldd);color:var(--gold);font-family:'Cinzel',serif;font-size:.65rem;font-weight:600;letter-spacing:.18em;text-transform:uppercase;padding:.65rem;cursor:pointer;transition:all .25s; }
+    .restore-ok:hover { background:rgba(201,168,76,.08);border-color:var(--gold); }
+
+    @keyframes fadeUp { from{opacity:0;transform:translateY(22px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes spin   { to{transform:rotate(360deg)} }
+    @keyframes shake  { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+  </style>
+</head>
+<body>
+
+<!-- AUTH -->
+<div class="screen on" id="s-auth">
+  <div class="aw">
+    <div class="a-logo">P<span class="g">✦</span>LIO</div>
+    <div class="a-sub">Espace Créateur</div>
+    <div class="card-v">
+      <div class="card-bg">P✦LIO</div>
+      <div class="chip"></div>
+      <div class="card-nd" id="card-prev">•••• •••• •••• ••••</div>
+      <div class="card-role">Créateur</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:.6rem;">
+      <input class="af" id="card-in" type="text" placeholder="Numéro de carte créateur" maxlength="24" autocomplete="off" spellcheck="false">
+      <button class="abtn" id="abtn" onclick="doAuth()">Accéder à l'espace →</button>
+      <div class="aerr" id="aerr"></div>
+    </div>
+    <p class="anote">Votre carte vous a été remise par Polio Éditions.<br>Contactez-nous si vous ne la retrouvez pas.</p>
+  </div>
+</div>
+
+<!-- EDITOR -->
+<div class="screen" id="s-ed">
+  <div class="topbar">
+    <span class="tb-logo">P<span class="g">✦</span>LIO</span>
+    <span class="tb-badge">Éditeur</span>
+    <div class="save-wrap" id="save-wrap" style="display:none;">
+      <div class="save-dot dirty" id="save-dot"></div>
+      <span class="save-lbl" id="save-lbl">non sauvegardé</span>
+    </div>
+    <span class="tb-user" id="tb-user">—</span>
+    <button class="tb-fin" onclick="toSum()">Finaliser le livre →</button>
+  </div>
+  <div class="ed-body">
+    <div class="sidebar">
+      <div class="sb-top">
+        <div class="sblbl">Livre</div>
+        <input class="sbt" id="book-title" placeholder="Titre du livre…">
+        <input class="sba" id="book-author" placeholder="Auteur" readonly>
+      </div>
+      <div class="sb-ch-h" style="display:flex;align-items:center;justify-content:space-between;padding-right:.75rem;"><span>Chapitres</span><button onclick="openChModal()" style="background:none;border:none;color:var(--txt3);cursor:pointer;font-size:1rem;line-height:1;transition:color .2s;" title="Ajouter">＋</button></div>
+      <div class="chl" id="chl"></div>
+      <button class="addch" onclick="openChModal()">+ Nouveau chapitre</button>
+    </div>
+    <div class="ed-main">
+      <div class="toolbar">
+        <span style="font-family:var(--ffm);font-size:.56rem;letter-spacing:.1em;color:var(--txt3);margin-right:.3rem;flex-shrink:0;">CH.</span>
+        <input class="cti" id="cti" placeholder="Titre du chapitre…" oninput="onCT(this.value)">
+        <div class="tsep"></div>
+        <button class="tbtn" onclick="cmd('bold')"><b>G</b></button>
+        <button class="tbtn" onclick="cmd('italic')"><i>I</i></button>
+        <button class="tbtn" onclick="cmd('underline')"><u>S</u></button>
+        <div class="tsep"></div>
+        <button class="tbtn" onclick="cmd('formatBlock','h1')">H1</button>
+        <button class="tbtn" onclick="cmd('formatBlock','h2')">H2</button>
+        <button class="tbtn" onclick="cmd('formatBlock','blockquote')">❝</button>
+        <button class="tbtn" onclick="cmd('formatBlock','p')">¶</button>
+        <div class="tsep"></div>
+        <button class="tbtn" onclick="cmd('insertUnorderedList')">≡</button>
+      </div>
+      <div class="write" id="write" contenteditable="true" data-ph="Commencez à écrire votre chapitre ici…" oninput="onW()"></div>
+    </div>
+    <div class="stats">
+      <div class="stb"><div class="stl">Mots</div><div class="stv" id="sv-w">0</div></div>
+      <div class="stb"><div class="stl">Pages est.</div><div class="stv" id="sv-p">0</div><div class="stu">~300 mots / page</div></div>
+      <div class="sthr"></div>
+      <div class="stb"><div class="stl">Chapitres</div><div class="stv" id="sv-c">0</div></div>
+      <div class="stb"><div class="stl">Caractères</div><div class="stv" id="sv-ch">0</div></div>
+      <div class="sthr"></div>
+      <div class="stb"><div class="stl">Prix estimé TTC</div><div class="stv stg" id="sv-pr">—</div><div class="stu">impression + façonnage</div></div>
+      <div class="stb"><div class="stl">Carte</div><div class="stv" id="sv-card" style="font-size:.72rem;color:var(--txt2);">—</div></div>
+      <button class="finbtn" onclick="toSum()">Finaliser →</button>
+    </div>
+  </div>
+</div>
+
+<!-- SUMMARY -->
+<div class="screen" id="s-sum">
+  <div class="sumw">
+    <div class="sum-top">
+      <div class="sum-logo">P<span class="g">✦</span>LIO</div>
+      <div class="sum-eye">Récapitulatif · Bon de commande</div>
+    </div>
+    <div class="sum-ttl" id="sm-title">Sans titre</div>
+    <div class="sum-aut" id="sm-auth">—</div>
+    <div class="sum-grid">
+      <div class="sc"><div class="scl">Mots total</div><div class="scv" id="sm-w">—</div><div class="scn">tous chapitres</div></div>
+      <div class="sc"><div class="scl">Pages estimées</div><div class="scv" id="sm-p">—</div><div class="scn">format A5 standard</div></div>
+      <div class="sc"><div class="scl">Chapitres</div><div class="scv" id="sm-c">—</div><div class="scn">sections rédigées</div></div>
+      <div class="sc"><div class="scl">Prix final TTC</div><div class="price-wrap"><div class="price-input-row"><input class="price-in" id="sm-pr" type="number" step="0.01" min="0" placeholder="0.00"> <span style="color:var(--gold);font-family:var(--ffm);font-size:1.2rem;flex-shrink:0;">€</span><button class="price-reset" onclick="resetPrice()" title="Recalculer automatiquement">↺</button></div><div class="price-auto-note" id="price-auto-note">calculé auto.</div></div></div>
+    </div>
+    <div class="sum-chs">
+      <div class="scht">Table des chapitres</div>
+      <div id="sm-chl"></div>
+    </div>
+    <div class="sum-acts">
+      <button class="btn-bk" onclick="goBack()">← Retour</button>
+      <button class="btn-sd" id="btn-sd" onclick="sendBook()">Envoyer à Polio Éditions →</button>
+    </div>
+  </div>
+</div>
+
+<!-- RESTORE MODAL -->
+<div class="modal-bg" id="restore-modal">
+  <div class="modal-box" style="text-align:left;">
+    <div class="mic" style="text-align:center;">↺</div>
+    <div class="mttl" style="text-align:center;">Brouillon retrouvé</div>
+    <div class="mtxt" style="text-align:center;margin-bottom:1rem;">Un manuscrit non terminé a été trouvé pour cette carte.</div>
+    <div class="restore-info">
+      <div class="r-row"><span class="r-key">Titre</span><span class="r-val" id="r-title">—</span></div>
+      <div class="r-row"><span class="r-key">Chapitres</span><span class="r-val" id="r-chs">—</span></div>
+      <div class="r-row"><span class="r-key">Mots</span><span class="r-val" id="r-words">—</span></div>
+      <div class="r-row"><span class="r-key">Sauvegardé</span><span class="r-val" id="r-date">—</span></div>
+    </div>
+    <div class="restore-src" id="r-src"></div>
+    <div class="restore-acts" style="margin-top:1rem;">
+      <button class="restore-new" onclick="startFresh()">Nouveau livre</button>
+      <button class="restore-ok" onclick="restoreDraft()">Reprendre →</button>
+    </div>
+  </div>
+</div>
+
+<!-- CHAPTER MODAL -->
+<div class="modal-bg" id="ch-modal">
+  <div class="modal-box">
+    <div class="mic" style="font-size:1.2rem;">＋</div>
+    <div class="mttl">Nouveau chapitre</div>
+    <div class="ch-modal-form">
+      <input class="ch-modal-input" id="ch-name-in" type="text" placeholder="Nom du chapitre…" maxlength="80">
+      <div style="font-size:.6rem;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:var(--txt3);margin-bottom:.15rem;">Suggestions rapides</div>
+      <div class="ch-modal-tags" id="ch-tags"></div>
+    </div>
+    <div class="ch-modal-actions">
+      <button class="ch-modal-cancel" onclick="closeChModal()">Annuler</button>
+      <button class="ch-modal-ok" onclick="confirmAddCh()">Ajouter →</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-bg" id="modal">
+  <div class="modal-box">
+    <div class="mic">✦</div>
+    <div class="mttl">Livre transmis</div>
+    <div class="mtxt" id="mtxt">Votre manuscrit a été envoyé à Polio Éditions.</div>
+    <button class="mcl" onclick="closeModal()">Fermer</button>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════
+   CONFIG — identique au site client Polio
+═══════════════════════════════════════════════════ */
+const SUPABASE_URL = 'https://comxzjhzpbwplibkfasw.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_0r8i0ntrXnvOMUomFu9pZA_4cmGf8vp';
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const W3F_KEY   = '919f99e1-d0da-448d-b85b-17f03f4e87df'; // Web3Forms
+const DEST_MAIL = 'gustave.bo@protonmail.com';
+
+const PRICE_BASE     = 5.00;
+const PRICE_PER_PAGE = 0.50;
+const PRICE_MIN      = 8.00;
+/* ═══════════════════════════════════════════════════ */
+
+let user = null, cardNum = '';
+let chapters = [], curIdx = 0;
+let _pendingDraft = null; // draft found during auth, waiting for user choice
+
+/* ══════════════════════════════════════════════════
+   DRAFT SYSTEM — localStorage + Supabase
+══════════════════════════════════════════════════ */
+const LS_KEY = k => `polio_cr_${k}`;
+
+// Save state to localStorage immediately, Supabase debounced
+let _sbTimer = null;
+let _lsTimer = null;
+
+function scheduleSave() {
+  setSaveStatus('dirty');
+  // localStorage: fast (800ms debounce)
+  clearTimeout(_lsTimer);
+  _lsTimer = setTimeout(saveLS, 800);
+  // Supabase: slow (30s debounce)
+  clearTimeout(_sbTimer);
+  _sbTimer = setTimeout(saveSB, 30000);
+}
+
+function saveLS() {
+  if (!cardNum) return;
+  try {
+    const draft = buildDraft();
+    localStorage.setItem(LS_KEY(cardNum), JSON.stringify(draft));
+    setSaveStatus('saved', 'local · ' + fmtTime(new Date()));
+  } catch(e) { console.warn('LS save error', e); }
+}
+
+async function saveSB() {
+  if (!cardNum) return;
+  setSaveStatus('saving');
+  try {
+    const draft = buildDraft();
+    const { error } = await db.from('manuscripts').upsert({
+      card_number:    cardNum,
+      title:          draft.title,
+      author:         user?.name || '',
+      chapters:       draft.chapters,
+      cur_idx:        draft.curIdx,
+      price_override: draft.priceOverride,
+      updated_at:     new Date().toISOString(),
+    }, { onConflict: 'card_number' });
+    if (error) throw error;
+    setSaveStatus('saved', 'cloud · ' + fmtTime(new Date()));
+  } catch(e) {
+    // Silently fall back — localStorage is still reliable
+    setSaveStatus('saved', 'local uniquement');
+  }
+}
+
+function buildDraft() {
+  save(); // flush current chapter content
+  return {
+    title:         document.getElementById('book-title')?.value || '',
+    chapters:      JSON.parse(JSON.stringify(chapters)),
+    curIdx,
+    priceOverride,
+    savedAt:       new Date().toISOString(),
+  };
+}
+
+function clearDraft() {
+  clearTimeout(_lsTimer); clearTimeout(_sbTimer);
+  try { localStorage.removeItem(LS_KEY(cardNum)); } catch(e){}
+  // Also clear from Supabase (fire-and-forget)
+  db.from('manuscripts').delete().eq('card_number', cardNum).then(() => {});
+  setSaveStatus('saved', 'brouillon effacé');
+}
+
+function setSaveStatus(state, label) {
+  const wrap = document.getElementById('save-wrap');
+  const dot  = document.getElementById('save-dot');
+  const lbl  = document.getElementById('save-lbl');
+  if (!wrap) return;
+  wrap.style.display = 'flex';
+  dot.className = 'save-dot ' + state;
+  if (label) lbl.textContent = label;
+  else if (state === 'dirty')  lbl.textContent = 'modifications en cours…';
+  else if (state === 'saving') lbl.textContent = 'sauvegarde…';
+}
+
+function fmtTime(d) {
+  return d.toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' });
+}
+
+// Try to find a draft from localStorage OR Supabase
+async function findDraft(cardKey) {
+  // 1. localStorage (instant)
+  let lsDraft = null;
+  try {
+    const raw = localStorage.getItem(LS_KEY(cardKey));
+    if (raw) lsDraft = JSON.parse(raw);
+  } catch(e){}
+
+  // 2. Supabase (cloud)
+  let sbDraft = null;
+  try {
+    const { data } = await db.from('manuscripts')
+      .select('title, chapters, cur_idx, price_override, updated_at, author')
+      .eq('card_number', cardKey)
+      .limit(1);
+    if (data && data.length > 0) {
+      const r = data[0];
+      sbDraft = {
+        title:         r.title || '',
+        chapters:      r.chapters || [],
+        curIdx:        r.cur_idx || 0,
+        priceOverride: r.price_override ?? null,
+        savedAt:       r.updated_at,
+        _source:       'cloud',
+      };
+    }
+  } catch(e){}
+
+  if (lsDraft) lsDraft._source = 'local';
+
+  // Return the most recent
+  if (!lsDraft && !sbDraft) return null;
+  if (!lsDraft) return sbDraft;
+  if (!sbDraft) return lsDraft;
+  return new Date(lsDraft.savedAt) > new Date(sbDraft.savedAt) ? lsDraft : sbDraft;
+}
+
+function showRestoreModal(draft) {
+  _pendingDraft = draft;
+  const words = (draft.chapters || []).reduce((n, ch) => {
+    const t = (ch.content || '').replace(/<[^>]*>/g,' ').trim();
+    return n + (t ? t.split(/\s+/).filter(Boolean).length : 0);
+  }, 0);
+  document.getElementById('r-title').textContent = draft.title || 'Sans titre';
+  document.getElementById('r-chs').textContent   = (draft.chapters || []).length + ' chapitre(s)';
+  document.getElementById('r-words').textContent = words.toLocaleString('fr') + ' mots';
+  document.getElementById('r-date').textContent  = draft.savedAt
+    ? new Date(draft.savedAt).toLocaleString('fr-FR') : '—';
+  document.getElementById('r-src').textContent   =
+    draft._source === 'cloud' ? '☁ Sauvegarde cloud' : '💾 Sauvegarde locale';
+  document.getElementById('restore-modal').classList.add('open');
+}
+
+function restoreDraft() {
+  document.getElementById('restore-modal').classList.remove('open');
+  if (!_pendingDraft) return;
+  chapters      = _pendingDraft.chapters || [{ title: 'Chapitre I', content: '' }];
+  curIdx        = Math.min(_pendingDraft.curIdx || 0, chapters.length - 1);
+  priceOverride = _pendingDraft.priceOverride ?? null;
+  document.getElementById('book-title').value = _pendingDraft.title || '';
+  renderChs(); loadCh(curIdx); updateStats();
+  setSaveStatus('saved', 'brouillon restauré ✓');
+  _pendingDraft = null;
+}
+
+function startFresh() {
+  document.getElementById('restore-modal').classList.remove('open');
+  clearDraft();
+  chapters = [{ title: 'Chapitre I', content: '' }];
+  curIdx   = 0;
+  priceOverride = null;
+  document.getElementById('book-title').value = '';
+  renderChs(); loadCh(0); updateStats();
+  _pendingDraft = null;
+}
+
+/* ── AUTH via Supabase (table "clients") ── */
+const cardIn  = document.getElementById('card-in');
+const cardPrv = document.getElementById('card-prev');
+const aerr    = document.getElementById('aerr');
+const abtn    = document.getElementById('abtn');
+
+cardIn.addEventListener('input', () => {
+  const v = cardIn.value.trim().toUpperCase();
+  cardPrv.textContent = v
+    ? v.padEnd(16,'•').replace(/(.{4})/g,'$1 ').trim().slice(0,23)
+    : '•••• •••• •••• ••••';
+});
+cardIn.addEventListener('keydown', e => { if (e.key === 'Enter') doAuth(); });
+
+async function doAuth() {
+  const raw = cardIn.value.trim();
+  aerr.textContent = '';
+  if (!raw) { aerr.textContent = 'Veuillez saisir votre numéro de carte.'; return; }
+
+  abtn.disabled = true;
+  abtn.innerHTML = '<span class="spinner"></span>Vérification…';
+
+  try {
+    const { data, error } = await db
+      .from('clients')
+      .select('name, credits')
+      .eq('card_number', raw)
+      .limit(1);
+
+    if (error) throw error;
+
+    if (!data || data.length === 0) {
+      aerr.textContent = '✕  Carte introuvable. Vérifiez le numéro ou contactez-nous.';
+      cardIn.classList.add('err');
+      setTimeout(() => cardIn.classList.remove('err'), 800);
+      return;
+    }
+
+    user    = data[0];
+    cardNum = raw;
+
+    document.getElementById('book-author').value   = user.name;
+    document.getElementById('tb-user').textContent = user.name + ' · ' + cardNum;
+    document.getElementById('sv-card').textContent = cardNum;
+
+    go('s-ed');
+
+    // Look for existing draft
+    abtn.innerHTML = '<span class="spinner"></span>Recherche d\'un brouillon…';
+    const draft = await findDraft(cardNum);
+
+    if (draft && draft.chapters && draft.chapters.length > 0) {
+      // Show restore prompt
+      chapters = [{ title: 'Chapitre I', content: '' }];
+      curIdx   = 0;
+      renderChs(); loadCh(0); updateStats();
+      showRestoreModal(draft);
+    } else {
+      // Fresh start
+      chapters = [{ title: 'Chapitre I', content: '' }];
+      curIdx   = 0;
+      renderChs(); loadCh(0); updateStats();
+      setSaveStatus('saved', 'nouveau livre');
+    }
+
+  } catch(err) {
+    aerr.textContent = 'Erreur de connexion. Veuillez réessayer.';
+    console.error(err);
+  } finally {
+    abtn.disabled = false;
+    abtn.textContent = 'Accéder à l\'espace →';
+  }
+}
+
+/* ── NAVIGATION ── */
+function go(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('on'));
+  document.getElementById(id).classList.add('on');
+}
+
+/* ── CHAPITRES ── */
+function renderChs() {
+  const el = document.getElementById('chl');
+  el.innerHTML = '';
+  chapters.forEach((ch, i) => {
+    const d = document.createElement('div');
+    d.className = 'chi' + (i === curIdx ? ' active' : '');
+    d.innerHTML = `<span class="cn">${pad(i+1)}</span><span class="cnm">${esc(ch.title||'Sans titre')}</span><button class="cdel" onclick="delCh(${i},event)">✕</button>`;
+    d.addEventListener('click', () => selCh(i));
+    el.appendChild(d);
+  });
+  document.getElementById('sv-c').textContent = chapters.length;
+}
+
+/* ── CHAPTER MODAL ── */
+const CH_SUGGESTIONS = [
+  'Introduction','Prologue','Épilogue','Conclusion','Préface',
+  'Partie I','Partie II','Partie III',
+  'Contexte','Méthode','Résultats','Discussion','Annexes',
+  'Remerciements','Bibliographie',
+];
+
+function openChModal() {
+  const inp = document.getElementById('ch-name-in');
+  inp.value = '';
+  // Build tags
+  const tags = document.getElementById('ch-tags');
+  tags.innerHTML = '';
+  // Suggest next roman numeral chapter + fixed tags
+  const nextRoman = 'Chapitre ' + toRoman(chapters.length + 1);
+  [nextRoman, ...CH_SUGGESTIONS].forEach(s => {
+    const btn = document.createElement('button');
+    btn.className = 'ch-tag';
+    btn.textContent = s;
+    btn.onclick = () => { inp.value = s; inp.focus(); };
+    tags.appendChild(btn);
+  });
+  document.getElementById('ch-modal').classList.add('open');
+  setTimeout(() => inp.focus(), 120);
+  inp.onkeydown = e => { if (e.key === 'Enter') confirmAddCh(); if (e.key === 'Escape') closeChModal(); };
+}
+
+function closeChModal() { document.getElementById('ch-modal').classList.remove('open'); }
+
+function confirmAddCh() {
+  const raw = document.getElementById('ch-name-in').value.trim();
+  const title = raw || ('Chapitre ' + toRoman(chapters.length + 1));
+  closeChModal();
+  save();
+  chapters.push({ title, content: '' });
+  curIdx = chapters.length - 1;
+  renderChs(); loadCh(curIdx); updateStats(); scheduleSave();
+}
+
+/* keep old addCh for compatibility */
+function addCh() { openChModal(); }
+
+/* ── PRICE OVERRIDE ── */
+let priceOverride = null; // null = auto
+
+function resetPrice() {
+  priceOverride = null;
+  const w = totalWords(), p = calcPages(w), pr = calcPrice(p);
+  document.getElementById('sm-pr').value = pr.toFixed(2);
+  document.getElementById('price-auto-note').textContent = 'calculé auto.';
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const prIn = document.getElementById('sm-pr');
+  if (prIn) prIn.addEventListener('input', () => {
+    priceOverride = parseFloat(prIn.value) || null;
+    document.getElementById('price-auto-note').textContent =
+      priceOverride !== null ? '✎ modifié manuellement' : 'calculé auto.';
+  });
+});
+function delCh(i, e) {
+  e.stopPropagation();
+  if (chapters.length <= 1) return;
+  chapters.splice(i, 1);
+  if (curIdx >= chapters.length) curIdx = chapters.length - 1;
+  renderChs(); loadCh(curIdx); updateStats(); scheduleSave();
+}
+function selCh(i) { save(); curIdx = i; renderChs(); loadCh(i); }
+function loadCh(i) {
+  document.getElementById('cti').value            = chapters[i].title;
+  document.getElementById('write').innerHTML      = chapters[i].content;
+}
+function save() {
+  if (chapters[curIdx]) chapters[curIdx].content = document.getElementById('write').innerHTML;
+}
+function onCT(v) { if (chapters[curIdx]) { chapters[curIdx].title = v; renderChs(); scheduleSave(); } }
+
+/* ── ÉDITEUR ── */
+function cmd(c, v) { document.getElementById('write').focus(); document.execCommand(c, false, v || null); }
+function onW() { save(); updateStats(); scheduleSave(); }
+
+// Hook book title changes too
+document.getElementById('book-title').addEventListener('input', scheduleSave);
+
+function totalWords() {
+  return chapters.reduce((n, ch) => {
+    const t = ch.content.replace(/<[^>]*>/g, ' ').trim();
+    return n + (t ? t.split(/\s+/).filter(Boolean).length : 0);
+  }, 0);
+}
+function totalChars() {
+  return chapters.reduce((n, ch) => n + ch.content.replace(/<[^>]*>/g, '').length, 0);
+}
+function calcPages(w) { return Math.max(1, Math.ceil(w / 300)); }
+function calcPrice(p) { return Math.max(PRICE_MIN, PRICE_BASE + p * PRICE_PER_PAGE); }
+
+function updateStats() {
+  const w = totalWords(), c = totalChars(), p = calcPages(w), pr = calcPrice(p);
+  document.getElementById('sv-w').textContent  = w.toLocaleString('fr');
+  document.getElementById('sv-p').textContent  = p;
+  document.getElementById('sv-ch').textContent = c.toLocaleString('fr');
+  document.getElementById('sv-pr').textContent = pr.toFixed(2) + ' €';
+}
+
+/* ── RÉCAPITULATIF ── */
+function toSum() {
+  save(); updateStats();
+  // Force immediate save before showing summary
+  saveLS();
+  clearTimeout(_sbTimer); _sbTimer = setTimeout(saveSB, 500);
+  const title = document.getElementById('book-title').value.trim() || 'Sans titre';
+  const w = totalWords(), p = calcPages(w), pr = calcPrice(p);
+
+  document.getElementById('sm-title').textContent = title;
+  document.getElementById('sm-auth').textContent  = 'par ' + user.name + ' · ' + cardNum;
+  document.getElementById('sm-w').textContent     = w.toLocaleString('fr');
+  document.getElementById('sm-p').textContent     = p;
+  document.getElementById('sm-c').textContent     = chapters.length;
+
+  // Only reset price if not manually overridden
+  const prIn = document.getElementById('sm-pr');
+  if (priceOverride === null) {
+    prIn.value = pr.toFixed(2);
+    document.getElementById('price-auto-note').textContent = 'calculé auto.';
+  } else {
+    prIn.value = priceOverride.toFixed(2);
+    document.getElementById('price-auto-note').textContent = '✎ modifié manuellement';
+  }
+
+  const listEl = document.getElementById('sm-chl');
+  listEl.innerHTML = '';
+  chapters.forEach((ch, i) => {
+    const txt = ch.content.replace(/<[^>]*>/g, ' ').trim();
+    const cw  = txt ? txt.split(/\s+/).filter(Boolean).length : 0;
+    const row = document.createElement('div');
+    row.className = 'schr';
+    row.innerHTML = `<span class="sn">${pad(i+1)}</span><span class="snm">${esc(ch.title||'Sans titre')}</span><span class="sw">${cw} mots</span>`;
+    listEl.appendChild(row);
+  });
+  go('s-sum');
+}
+function goBack() { go('s-ed'); }
+
+/* ── ENVOI — Web3Forms → gustave.bo@protonmail.com ── */
+async function sendBook() {
+  const btn = document.getElementById('btn-sd');
+  btn.disabled = true; btn.textContent = 'Envoi en cours…';
+
+  const title = document.getElementById('book-title').value.trim() || 'Sans titre';
+  const w = totalWords(), p = calcPages(w);
+  const prRaw = parseFloat(document.getElementById('sm-pr').value);
+  const pr = isNaN(prRaw) ? calcPrice(p) : prRaw;
+  const priceLabel = priceOverride !== null
+    ? `${pr.toFixed(2)} € (modifié manuellement)`
+    : `${pr.toFixed(2)} € (calculé auto · ${PRICE_BASE}€ fixe + ${PRICE_PER_PAGE}€/page)`;
+
+  let chapTxt = '';
+  let fullTxt = '';
+  chapters.forEach((ch, i) => {
+    const txt = ch.content.replace(/<[^>]*>/g, ' ').trim();
+    const cw  = txt ? txt.split(/\s+/).filter(Boolean).length : 0;
+    chapTxt  += `${pad(i+1)}. ${ch.title||'Sans titre'} — ${cw} mots\n`;
+    fullTxt  += `\n\n========== ${ch.title||'Sans titre'} ==========\n\n`;
+    fullTxt  += ch.content
+      .replace(/<br\s*\/?>/gi, '\n').replace(/<\/p>/gi, '\n')
+      .replace(/<\/h[1-3]>/gi, '\n').replace(/<[^>]*>/g, '').trim();
+  });
+
+  const message =
+`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  NOUVEAU MANUSCRIT — POLIO ÉDITIONS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+TITRE      : ${title}
+AUTEUR     : ${user.name}
+CARTE      : ${cardNum}
+CRÉDITS    : ${user.credits ?? '—'}
+DATE       : ${new Date().toLocaleString('fr-FR')}
+
+STATISTIQUES
+  Mots      : ${w.toLocaleString('fr')}
+  Pages est.: ${p}  (format A5, ~300 mots/page)
+  Chapitres : ${chapters.length}
+  Prix TTC  : ${priceLabel}
+
+TABLE DES CHAPITRES
+${chapTxt}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CONTENU INTÉGRAL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+${fullTxt.slice(0, 45000)}`;
+
+  try {
+    const res = await fetch('https://api.web3forms.com/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        access_key: W3F_KEY,
+        subject:    `[Polio Créateur] Manuscrit : "${title}" — ${user.name}`,
+        from_name:  'Espace Créateur Polio',
+        email:      DEST_MAIL,
+        replyto:    DEST_MAIL,
+        message,
+      })
+    });
+    const json = await res.json();
+    if (!json.success) throw new Error(json.message || 'Erreur inconnue');
+
+    openModal(`Votre manuscrit <em>${esc(title)}</em> a bien été transmis à Polio Éditions.<br><br>Prix confirmé : <strong>${pr.toFixed(2)} €</strong> — Vous recevrez un retour dans les 48 h.`);
+    clearDraft(); // remove local + cloud draft after successful send
+
+  } catch(err) {
+    alert('Erreur lors de l\'envoi : ' + (err.message || 'Veuillez réessayer.'));
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Envoyer à Polio Éditions →';
+}
+
+function openModal(txt) {
+  document.getElementById('mtxt').innerHTML = txt;
+  document.getElementById('modal').classList.add('open');
+}
+function closeModal() { document.getElementById('modal').classList.remove('open'); }
+
+/* ── UTILS ── */
+function pad(n) { return String(n).padStart(2, '0'); }
+function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function toRoman(n) {
+  const v=[1000,900,500,400,100,90,50,40,10,9,5,4,1];
+  const s=['M','CM','D','CD','C','XC','L','XL','X','IX','V','IV','I'];
+  let r=''; v.forEach((val,i)=>{ while(n>=val){r+=s[i];n-=val;} }); return r;
+}
+</script>
+</body>
+</html>
