@@ -868,7 +868,17 @@ ${fullTxt.slice(0, 45000)}`;
     });
     const json = await res.json();
     if (!json.success) throw new Error(json.message || 'Erreur inconnue');
-
+    // Après l'envoi email réussi, on insère aussi en BDD
+await db.from('manuscrits').insert([{
+  title:    title,
+  author:   user.name,
+  card_number: cardNum,
+  words:    w,
+  pages:    p,
+  chapters_count: chapters.length,
+  price_credits: Math.round(pr * 100), // en crédits
+  content_preview: fullTxt.slice(0, 500)
+}]);
     openModal(`Votre manuscrit <em>${esc(title)}</em> a bien été transmis à Polio Éditions.<br><br>Prix confirmé : <strong>${pr.toFixed(2)} €</strong> — Vous recevrez un retour dans les 48 h.`);
     clearDraft(); // remove local + cloud draft after successful send
 
